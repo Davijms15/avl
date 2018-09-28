@@ -67,24 +67,24 @@ binary_tree *add(binary_tree *bt, lli item) {
 		bt->right = add(bt->right, item);
 	}
 
-	// bt->height = height(bt);
-	// binary_tree *child;
+	bt->height = height(bt);
+	binary_tree *child;
 
-	// if (balance_factor(bt) == 2 || balance_factor(bt) == -2) {
-	// 	if (balance_factor(bt) == 2) {
-	// 		child = bt->left;
-	// 		if (balance_factor(child) == -1) {
-	// 			bt->left = rotate_left(child);
-	// 		}
-	// 		bt = rotate_right(bt);
-	// 	} else if (balance_factor(bt) == -2) {
-	// 		child = bt->right;
-	// 		if (balance_factor(child) == 1) {
-	// 			bt->right = rotate_right(child);
-	// 		}
-	// 		bt = rotate_left(bt);
-	// 	}
-	// }
+	if (balance_factor(bt) == 2 || balance_factor(bt) == -2) {
+		if (balance_factor(bt) == 2) {
+			child = bt->left;
+			if (balance_factor(child) == -1) {
+				bt->left = rotate_left(child);
+			}
+			bt = rotate_right(bt);
+		} else if (balance_factor(bt) == -2) {
+			child = bt->right;
+			if (balance_factor(child) == 1) {
+				bt->right = rotate_right(child);
+			}
+			bt = rotate_left(bt);
+		}
+	}
 
 	return bt;
 }
@@ -137,13 +137,19 @@ binary_tree *search_pai(binary_tree *bt, lli item)
 
 binary_tree *remove_node(binary_tree *bt, lli item) 
 {
+	if (bt == NULL)
+	{
+		printf("Arvore vazia\n");
+		return bt;
+	}
+
 	binary_tree *root = bt;
 	binary_tree *node = search(bt, item);
 	binary_tree *bt_pai = search_pai(bt, item);
 	
 	if (node == NULL)
 	{
-		printf("item nao consta na arvore\n");
+		printf("Item nao consta na arvore\n");
 		return bt;
 	}
 
@@ -151,115 +157,110 @@ binary_tree *remove_node(binary_tree *bt, lli item)
 		free(bt);
 		return NULL;
 	}
-	else if (bt->item == item) {
-		binary_tree *left_right = bt;
-	printf("%lld\n", bt->item);
-		printf("aqui\n");
-		while (left_right->left != NULL)
-		{
-			left_right = left_right->left;
 
-			if (left_right->right == NULL)
-			{
-				break;
-			}
+	else if (bt->item == item) { // eliminar a raiz quando tiver filhos
+		binary_tree *pai_aux = bt;
+		binary_tree *aux = bt;
 
-			else
-			{
-				while (left_right->right != NULL)
-				{
-					left_right = left_right-> right;// 4 
-				}
+		if (aux->left != NULL) {
+			aux = aux->left;
+			while (aux->right != NULL) {
+				pai_aux = aux;
+				aux = aux->right;
+			} if (aux == bt->left) {
+				aux->right = bt->right;
+			} else {
+				pai_aux->right = aux->left;
+				aux->right = bt->right;
+				aux->left = bt->left;
 			}
 		}
 
-		left_right->right = bt->right;
+		else if (aux->left == NULL) {
+			aux = aux->right;
+			while (aux->left != NULL) {
+				pai_aux = aux;
+				aux = aux->left;
+			} if (aux == bt->right) {
+				aux->left = bt->left;
+			} else {
+				pai_aux->left = aux->right;
+				aux->left = bt->left;
+				aux->right = bt->right;
+			}
+		}
 
 		bt->left = NULL;
+		bt->right = NULL;
 		free(bt);
-		bt = left_right; 
-	
-		return bt;	
+		bt = aux;
+		return bt;
 	}
 
-	else if (node->left == NULL && node->right == NULL) {
+	else if (node->left == NULL && node->right == NULL) { // eliminar folha
 		if ((bt_pai->right != NULL) && (bt_pai->right->item == item)) {
 			free(bt_pai->right);
 			bt_pai->right = NULL;
-			return bt;
 		}
+
 		else if ((bt_pai->left != NULL) && (bt_pai->left->item == item)) {
 			free(bt_pai->left);
 			bt_pai->left = NULL;
-			return bt;
 		}
 	}
-	else if (node->left == NULL && node->right != NULL)
-	{	
-		if (node->item > bt_pai->item)
-		{
+
+	else if (node->left == NULL && node->right != NULL) { // eliminar um node com uma subtree a direita 	
+		if (node->item > bt_pai->item) {
 			bt_pai->right = node->right;
 			node->right = NULL;
 			free(node);
 		}
-		else
-		{
+
+		else {
 			bt_pai->left = node->right;
 			node->right = NULL;
 			free(node);
 		}
 	}
 
-	else if (node->left != NULL && node->right == NULL)
-	{
-		if (node->item > bt_pai->item)
-		{
+	else if (node->left != NULL && node->right == NULL) { // eliminar um node com uma subtree a esquerda
+		if (node->item > bt_pai->item) {
 			bt_pai->right = node->left;
 			node->left = NULL;
 			free(node);
-			//return bt;
-		}
-		else
-		{
+		} else {
 			bt_pai->left = node->left;
 			node->left = NULL;
 			free(node);
-			//return bt;
 		}
 	}
 
-	else if (node->left != NULL && node->right != NULL)
-	{
-		if (node->item < root->item)//Verifica se o node a ser removido está a esquerda da raiz
-		{
-			binary_tree *aux = node -> right;
-			binary_tree *aux_pai = node;
+	else if (node->left != NULL && node->right != NULL) {// eliminar um node que tem duas subarvores
+		binary_tree *aux_pai = node;
 
-			while(aux->left != NULL)//Busca o node mais a esquerda da subtree a direita
-			{
+		if (node->item < root->item) { // Verifica se o node a ser removido está a esquerda da raiz
+			binary_tree *aux = node->right;
+
+			while(aux->left != NULL) { // Busca o node mais a esquerda da subtree a direita
 				aux_pai = aux;
 				aux = aux->left;
 			}
 
-			if(aux_pai != node)
-			{
+			if(aux_pai != node) {
 				aux_pai->left = aux->right;
 			}
 
-			if(bt_pai->left == node)
-			{
-				aux->left = node->left;
+			if(bt_pai->left == node) {
 				bt_pai->left = aux;
 			}
 
-			else if(bt_pai -> right == node)
-			{
-				aux->left = node->left;
-				bt_pai -> right = aux;
+			else if(bt_pai->right == node) {
+				bt_pai->right = aux;
 			}
 
-			if(node->right != aux)
-			{
+			aux->left = node->left;
+
+			if(node->right != aux) {
 				aux->right = node->right;
 			}
 
@@ -267,10 +268,9 @@ binary_tree *remove_node(binary_tree *bt, lli item)
 			free(node);
 		}
 
-		else if (node -> item > root -> item)//Verifica se o node a ser removido está a direita da raiz
+		else if (node->item > root->item)//Verifica se o node a ser removido está a direita da raiz
 		{
-			binary_tree *aux = node -> left;
-			binary_tree *aux_pai = node;
+			binary_tree *aux = node->left;
 
 			while(aux->right != NULL)//Busca o node mais a esquerda da subtree a direita
 			{
@@ -284,16 +284,16 @@ binary_tree *remove_node(binary_tree *bt, lli item)
 			}
 
 			if(bt_pai->right == node)
-			{
-				aux->right = node->right;
+			{	
 				bt_pai->right = aux;
 			}
 
-			else if(bt_pai -> left == node)
+			else if(bt_pai->left == node)
 			{
-				aux->right = node->right;
-				bt_pai -> left = aux;
+				bt_pai->left = aux;
 			}
+
+			aux->right = node->right;
 
 			if(node->left != aux)
 			{
@@ -304,6 +304,25 @@ binary_tree *remove_node(binary_tree *bt, lli item)
 			free(node);
 		}
 	}
+
+	binary_tree *child;
+
+	if (balance_factor(bt) == 2 || balance_factor(bt) == -2) {
+		if (balance_factor(bt) == 2) {
+			child = bt->left;
+			if (balance_factor(child) == -1) {
+				bt->left = rotate_left(child);
+			}
+			bt = rotate_right(bt);
+		} else if (balance_factor(bt) == -2) {
+			child = bt->right;
+			if (balance_factor(child) == 1) {
+				bt->right = rotate_right(child);
+			}
+			bt = rotate_left(bt);
+		}
+	}
+
 	return bt;
 }
 
@@ -331,37 +350,56 @@ int main() {
 	int i;
 	binary_tree *bt = create_empty_binary_tree();
 
-	bt = add(bt, 5);
-	bt = add(bt, 3);
+	bt = add(bt, 7);
+	bt = add(bt, 2);
+	bt = add(bt, 1);
 	bt = add(bt, 4);
 
-	bt = add(bt, 2);
+	bt = add(bt, 3);
+	bt = add(bt, 3);
 	bt = add(bt, 8);
-	bt = add(bt, 9);
-	bt = add(bt, 7);
+	bt = add(bt, 5);
+	bt = add(bt, 6);
 
 
 	print_tree(bt);
 	printf("\n");
 	printf("\n");
 
-	bt = remove_node(bt, 5);
+	bt = remove_node(bt, 4);
 	print_tree(bt);
 	printf("\n");
-	
-	// remove_node(bt, 9);
+	// bt = remove_node(bt, 5);
 	// print_tree(bt);
 	// printf("\n");
-	// remove_node(bt, 3);
+	// bt = remove_node(bt, 3);
 	// print_tree(bt);
 	// printf("\n");
-	// remove_node(bt, 5);
+	// bt = remove_node(bt, 2);
 	// print_tree(bt);
 	// printf("\n");
-	// remove_node(bt, 1);
+	// bt = remove_node(bt, 4);
 	// print_tree(bt);
 	// printf("\n");
-	/*remove_node(bt, 4);
-	print_tree(bt);
-	printf("\n");*/
+	// bt = remove_node(bt, 3);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 7);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 8);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 9);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 3);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 2);
+	// print_tree(bt);
+	// printf("\n");
+	// bt = remove_node(bt, 4);
+	// print_tree(bt);
+	// printf("\n");
 }
